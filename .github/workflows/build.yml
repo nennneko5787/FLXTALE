@@ -52,6 +52,12 @@ jobs:
           haxelib install flixel-addons 3.0.2
           haxelib install flixel-ui 2.5.0
           haxelib git discord_rpc https://github.com/Aidan63/linc_discord-rpc
+          haxelib set lime 8.0.1
+          haxelib set openfl 9.2.1
+          haxelib set flixel 5.2.2
+          haxelib set flixel-tools 1.5.1
+          haxelib set flixel-addons 3.0.2
+          haxelib set flixel-ui 2.5.0
           haxelib list
         shell: cmd
       - name: Create Version Tag
