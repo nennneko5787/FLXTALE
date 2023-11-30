@@ -58,11 +58,6 @@ class Main extends Sprite
 		super();
 		DiscordClient.initialize();
 
-		#if !mobile
-		fpsCounter = new FPS(10, 3, 0xFFFFFF);
-		addChild(fpsCounter);
-		#end
-
 		#if ErrorDialog
 		Lib.current.loaderInfo.uncaughtErrorEvents.addEventListener(UncaughtErrorEvent.UNCAUGHT_ERROR, onCrash);
 		#end

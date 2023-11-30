@@ -40,7 +40,7 @@ class PlayState extends State
 	{
 		super.create();
 
-		monster = new Monster(0, 0, "エコーフラワー");
+		monster = new Monster(0, 0, "Sans");
 
 		stats = new FlxText(30, 400, 0, Global.name + '   LV ' + Global.lv, 22);
 		stats.font = Paths.font('Small');
