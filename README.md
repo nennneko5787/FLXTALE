@@ -1,5 +1,5 @@
 # FLXTALE
-* We have not decided how you should read this. Read it any way you like.
+* We have not decided what to call this. Please call it whatever you like.
 ## How to build
 * First, download and install [haxe](https://haxe.org/download/)  
 * Second, execute the following command at command prompt / PowerShell / Terminal.  
