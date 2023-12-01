@@ -1,5 +1,6 @@
 package backends;
 
+import flixel.FlxCamera;
 import flixel.FlxG;
 import flixel.FlxState;
 import flixel.text.FlxText;
@@ -7,6 +8,8 @@ import haxe.Timer;
 
 class State extends FlxState
 {
+	var camOverlay:FlxCamera;
+
 	public var currentFPS(default, null):Int;
 
 	var overlayText:FlxText;
@@ -18,9 +21,16 @@ class State extends FlxState
 	{
 		super.create();
 
+		camOverlay = new FlxCamera();
+		camOverlay.bgColor.alpha = 0;
+
+		// FlxG.cameras.reset(camOverlay);
+		FlxG.cameras.add(camOverlay, false);
+
 		overlayText = new FlxText(12, 12, 0, "FPS: 0", 12);
 		overlayText.font = Paths.font('Small');
 		overlayText.scrollFactor.set();
+		overlayText.cameras = [camOverlay];
 		add(overlayText);
 		currentFPS = 0;
 		cacheCount = 0;

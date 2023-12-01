@@ -4,6 +4,7 @@ import backends.Global;
 import backends.Monster;
 import backends.Paths;
 import backends.State;
+import flixel.FlxCamera;
 import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.addons.display.shapes.FlxShapeBox;
@@ -36,31 +37,43 @@ class PlayState extends State
 
 	var monster:Monster;
 
+	var camGame:FlxCamera;
+
 	override public function create()
 	{
 		super.create();
+
+		camGame = new FlxCamera();
+		camGame.bgColor.alpha = 0;
+
+		// FlxG.cameras.reset(camGame);
+		FlxG.cameras.add(camGame, false);
 
 		monster = new Monster(0, 0, "Sans");
 
 		stats = new FlxText(30, 400, 0, Global.name + '   LV ' + Global.lv, 22);
 		stats.font = Paths.font('Small');
 		stats.scrollFactor.set();
+		stats.cameras = [camGame];
 		add(stats);
 
 		hpName = new FlxSprite(stats.x + 210, stats.y + 5, Paths.sprite('hpname'));
 		hpName.scrollFactor.set();
 		hpName.active = false;
+		hpName.cameras = [camGame];
 		add(hpName);
 
 		hpBar = new FlxBar(hpName.x + 35, hpName.y - 5, LEFT_TO_RIGHT, Std.int(Global.maxHp * 1.2), 20, Global, 'hp', 0, Global.maxHp);
 		hpBar.createFilledBar(FlxColor.RED, FlxColor.YELLOW);
 		// hpBar.emptyCallback = () -> FlxG.switchState(new GameOverState());
 		hpBar.scrollFactor.set();
+		hpBar.cameras = [camGame];
 		add(hpBar);
 
 		hpInfo = new FlxText((hpBar.x + 15) + hpBar.width, hpBar.y, 0, Global.hp + ' / ' + Global.maxHp, 22);
 		hpInfo.font = Paths.font('Small');
 		hpInfo.scrollFactor.set();
+		hpInfo.cameras = [camGame];
 		add(hpInfo);
 
 		items = new FlxTypedGroup<FlxSprite>();
@@ -82,6 +95,7 @@ class PlayState extends State
 			}
 
 			bt.scrollFactor.set();
+			bt.cameras = [camGame];
 			bt.ID = i;
 			items.add(bt);
 		}
@@ -91,12 +105,14 @@ class PlayState extends State
 		box = new FlxShapeBox(32, 250, 570, 135, {thickness: 6, jointStyle: MITER, color: FlxColor.WHITE}, FlxColor.BLACK);
 		box.scrollFactor.set();
 		box.active = false;
+		box.cameras = [camGame];
 		add(box);
 
 		heart = new FlxSprite(0, 0, Paths.sprite('heart'));
 		heart.color = FlxColor.RED;
 		heart.scrollFactor.set();
 		heart.active = false;
+		heart.cameras = [camGame];
 		add(heart);
 
 		defaultText = '* You feel like you\'re going to\n  have a bad time.';
@@ -104,6 +120,7 @@ class PlayState extends State
 		dialogText.font = Paths.font('DTM-Mono');
 		dialogText.sounds = [FlxG.sound.load(Paths.sound("txt2"), 0.86)];
 		dialogText.scrollFactor.set();
+		dialogText.cameras = [camGame];
 		add(dialogText);
 		dialogText.start(0.04, true);
 
@@ -116,6 +133,7 @@ class PlayState extends State
 	override public function update(elapsed:Float)
 	{
 		super.update(elapsed);
+		// camGame.angle += 1;
 		if (FlxG.keys.justPressed.ESCAPE)
 			FlxG.switchState(new TitleState());
 		else if (FlxG.keys.justPressed.LEFT && !choiceSelected)
