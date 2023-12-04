@@ -5,16 +5,11 @@
 * Second, execute the following command at command prompt / PowerShell / Terminal.  
 * [(If you do not have Git installed, download it from here and install it.)](https://git-scm.com/)
 ```
-haxelib install lime 8.0.1
-haxelib install openfl 9.2.1
-haxelib install flixel 5.2.2
+haxelib install hmm
+haxelib run hmm install
 haxelib run lime setup flixel
 haxelib run lime setup
-haxelib install flixel-tools 1.5.1
 haxelib run flixel-tools setup
-haxelib install flixel-addons 3.0.2
-haxelib install flixel-ui 2.5.0
-haxelib git discord_rpc https://github.com/Aidan63/linc_discord-rpc
 haxelib set lime 8.0.1
 haxelib set openfl 9.2.1
 haxelib set flixel 5.2.2
