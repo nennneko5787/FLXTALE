@@ -9,39 +9,60 @@ import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.addons.display.shapes.FlxShapeBox;
 import flixel.addons.text.FlxTypeText;
+import flixel.addons.util.FlxAsyncLoop;
 import flixel.group.FlxGroup;
 import flixel.input.keyboard.FlxKey;
 import flixel.math.FlxMath;
 import flixel.text.FlxText;
+import flixel.tweens.FlxTween;
 import flixel.ui.FlxBar;
+import flixel.util.FlxAxes;
 import flixel.util.FlxColor;
+import flixel.util.FlxSpriteUtil;
+import flixel.util.FlxTimer;
+import substates.GameOverSubState;
 
 class PlayState extends State
 {
-	var selected:Int = 0;
+	public static var instance:PlayState;
+
+	public var selected:Int = 0;
+
 	final choices:Array<String> = ['Fight', 'Talk', 'Item', 'Spare'];
-	var items:FlxTypedGroup<FlxSprite>;
 
-	var stats:FlxText;
-	var hpName:FlxSprite;
-	var hpBar:FlxBar;
-	var hpInfo:FlxText;
+	public var items:FlxTypedGroup<FlxSprite>;
 
-	var box:FlxShapeBox;
-	var heart:FlxSprite;
+	public var stats:FlxText;
+	public var hpName:FlxSprite;
+	public var hpBar:FlxBar;
+	public var hpInfo:FlxText;
 
-	var dialogText:FlxTypeText;
-	var defaultText:String;
+	public var box:FlxShapeBox;
+	public var heart:FlxSprite;
 
-	var choiceSelected:Bool = false;
+	public var targetSpr:FlxSprite;
+	public var targetChoiceSpr_0:FlxSprite;
+	public var targetChoiceSpr_1:FlxSprite;
+	public var targetChoiceTween:FlxTween;
 
-	var monster:Monster;
+	public var attacked:Bool = false;
+	public var isDanmaku:Bool = false;
 
-	var camGame:FlxCamera;
+	public var dialogText:FlxTypeText;
+	public var defaultText:String;
+
+	public var choiceSelected:Bool = false;
+	public var choiceChoiced:Bool = false;
+
+	public var monster:Monster;
+
+	public var camGame:FlxCamera;
 
 	override public function create()
 	{
 		super.create();
+
+		instance = this;
 
 		camGame = new FlxCamera();
 		camGame.bgColor.alpha = 0;
@@ -49,6 +70,7 @@ class PlayState extends State
 		// FlxG.cameras.reset(camGame);
 		FlxG.cameras.add(camGame, false);
 
+		// Characters set
 		monster = new Monster(0, 0, "Sans");
 
 		stats = new FlxText(30, 400, 0, Global.name + '   LV ' + Global.lv, 22);
@@ -61,11 +83,11 @@ class PlayState extends State
 		hpName.scrollFactor.set();
 		hpName.active = false;
 		hpName.cameras = [camGame];
+		hpBar.emptyCallback = () -> openSubState(new GameOverSubState());
 		add(hpName);
 
 		hpBar = new FlxBar(hpName.x + 35, hpName.y - 5, LEFT_TO_RIGHT, Std.int(Global.maxHp * 1.2), 20, Global, 'hp', 0, Global.maxHp);
 		hpBar.createFilledBar(FlxColor.RED, FlxColor.YELLOW);
-		// hpBar.emptyCallback = () -> FlxG.switchState(new GameOverState());
 		hpBar.scrollFactor.set();
 		hpBar.cameras = [camGame];
 		add(hpBar);
@@ -108,13 +130,6 @@ class PlayState extends State
 		box.cameras = [camGame];
 		add(box);
 
-		heart = new FlxSprite(0, 0, Paths.sprite('heart'));
-		heart.color = FlxColor.RED;
-		heart.scrollFactor.set();
-		heart.active = false;
-		heart.cameras = [camGame];
-		add(heart);
-
 		defaultText = '* You feel like you\'re going to\n  have a bad time.';
 		dialogText = new FlxTypeText(box.x + 14, box.y + 14, Std.int(box.width), defaultText, 32, true);
 		dialogText.font = Paths.font('DTM-Mono');
@@ -123,6 +138,32 @@ class PlayState extends State
 		dialogText.cameras = [camGame];
 		add(dialogText);
 		dialogText.start(0.04, true);
+
+		heart = new FlxSprite(0, 0, Paths.sprite('heart'));
+		heart.color = FlxColor.RED;
+		heart.scrollFactor.set();
+		heart.active = false;
+		heart.cameras = [camGame];
+		add(heart);
+
+		targetSpr = new FlxSprite(dialogText.x - 2, dialogText.y - 2, Paths.sprite('target'));
+		targetSpr.scrollFactor.set();
+		targetSpr.active = false;
+		targetSpr.cameras = [camGame];
+		targetSpr.visible = false;
+		add(targetSpr);
+
+		targetChoiceSpr_1 = new FlxSprite(dialogText.x - 2, dialogText.y - 10, Paths.sprite('targetchoice_1'));
+		targetChoiceSpr_1.scrollFactor.set();
+		targetChoiceSpr_1.cameras = [camGame];
+		targetChoiceSpr_1.visible = false;
+		add(targetChoiceSpr_1);
+
+		targetChoiceSpr_0 = new FlxSprite(dialogText.x - 2, dialogText.y - 10, Paths.sprite('targetchoice_0'));
+		targetChoiceSpr_0.scrollFactor.set();
+		targetChoiceSpr_0.cameras = [camGame];
+		targetChoiceSpr_0.visible = false;
+		add(targetChoiceSpr_0);
 
 		changeChoice();
 		choiceSelected = false;
@@ -141,63 +182,117 @@ class PlayState extends State
 		else if (FlxG.keys.justPressed.RIGHT && !choiceSelected)
 			changeChoice(1);
 
-		if (FlxG.keys.justPressed.Z)
+		if (!choiceChoiced)
 		{
-			FlxG.sound.play(Paths.sound('menuconfirm'));
-
-			if (choiceSelected)
+			if (FlxG.keys.justPressed.Z)
 			{
-				if (choices[selected] == 'Talk')
+				FlxG.sound.play(Paths.sound('menuconfirm'));
+
+				if (choiceSelected)
 				{
-					// TODO
+					heart.visible = false;
+					switch (choices[selected])
+					{
+						case 'Fight':
+							targetChoiceSpr_0.x = dialogText.x - 2;
+							targetChoiceSpr_1.x = dialogText.x - 2;
+							choiceChoiced = true;
+							dialogText.visible = false;
+							targetSpr.visible = true;
+							targetChoiceSpr_1.visible = true;
+							trace("unun");
+							targetChoiceTween = FlxTween.tween(targetChoiceSpr_1, {x: box.width + 20, y: dialogText.y - 10}, 2);
+							targetChoiceTween.start();
+					}
 				}
 				else
 				{
-					dialogText.visible = false;
+					dialogText.visible = true;
 
-					// TODO
+					if (choices[selected] == 'Item' && Global.items.length <= 0)
+						return;
+
+					choiceSelected = true;
+
+					switch (choices[selected])
+					{
+						case 'Fight' | 'Talk':
+							heart.setPosition(box.x + 16, box.y + 26);
+							dialogText.resetText('* ${monster.data.name}');
+							dialogText.start(0.1, true);
+							dialogText.skip();
+						case 'Item':
+							heart.setPosition(box.x + 16, box.y + 26);
+							dialogText.resetText('* Item Selected...');
+							dialogText.start(0.1, true);
+							dialogText.skip();
+						case 'Spare':
+							heart.setPosition(box.x + 16, box.y + 26);
+							dialogText.resetText('* Mercy Selected...');
+							dialogText.start(0.1, true);
+							dialogText.skip();
+					}
 				}
 			}
-			else
+			else if (FlxG.keys.justPressed.X && choiceSelected)
 			{
+				choiceSelected = false;
+				changeChoice();
+
 				dialogText.visible = true;
-
-				if (choices[selected] == 'Item' && Global.items.length <= 0)
-					return;
-
-				choiceSelected = true;
-
-				switch (choices[selected])
-				{
-					case 'Fight' | 'Talk':
-						dialogText.resetText('* ${monster.data.name}');
-						dialogText.start(0.1, true);
-						dialogText.skip();
-
-					/*var monsterHpBar:FlxBar = new FlxBar(box.x + 158 + (monster.data.name.length * 16), writer.y, LEFT_TO_RIGHT,
-							Std.int(monster.data.hp / monster.data.maxHp * 100), 16, monster.data, 'hp', 0, monster.data.maxHp);
-						monsterHpBar.createFilledBar(FlxColor.RED, FlxColor.LIME);
-						monsterHpBar.emptyCallback = () -> FlxG.log.notice('YOU WON!');
-						monsterHpBar.scrollFactor.set();
-						add(monsterHpBar); */
-					case 'Item':
-						dialogText.resetText('* Item Selected...');
-						dialogText.start(0.1, true);
-						dialogText.skip();
-					case 'Spare':
-						dialogText.resetText('* Mercy Selected...');
-						dialogText.start(0.1, true);
-						dialogText.skip();
-				}
+				dialogText.resetText(defaultText);
+				dialogText.start(0.04, true);
 			}
 		}
-		else if (FlxG.keys.justPressed.X && choiceSelected)
+		else
 		{
-			choiceSelected = false;
+			if (FlxG.keys.justPressed.Z)
+			{
+				if (targetChoiceTween.active)
+				{
+					targetChoiceTween.cancel();
+					FlxG.sound.play(Paths.sound('slice'));
+					targetChoiceSpr_0.x = targetChoiceSpr_1.x;
+					attacked = true;
+					monster.health -= 10;
+					new FlxTimer().start(1, (timer:FlxTimer) ->
+					{
+						attacked = false;
+						targetChoiceSpr_0.visible = false;
+						targetChoiceSpr_1.visible = false;
+						targetSpr.visible = false;
+						var boxTween:FlxTween = FlxTween.tween(box, {x: 248.875, shapeWidth: box.shapeHeight}, 0.5, {
+							onComplete: function(tween:FlxTween):Void
+							{
+								changeChoice();
+								heart.x = ((box.x - box.offset.x) + box.shapeWidth / 2) - heart.width;
+								heart.y = ((box.x - box.offset.y) + box.shapeWidth / 2) - heart.height;
+								heart.visible = true;
+								isDanmaku = true;
+							}
+						});
+						boxTween.start();
+					}, 1);
+				}
+			}
+			else if (attacked)
+			{
+				targetChoiceSpr_0.visible = !targetChoiceSpr_0.visible;
+			}
+			else if (isDanmaku)
+			{
+				if (FlxG.keys.pressed.UP)
+					heart.y -= Global.speed;
+				if (FlxG.keys.pressed.DOWN)
+					heart.y += Global.speed;
+				if (FlxG.keys.pressed.LEFT)
+					heart.x -= Global.speed;
+				if (FlxG.keys.pressed.RIGHT)
+					heart.x += Global.speed;
+				Global.hp -= 1;
 
-			dialogText.visible = true;
-			dialogText.resetText(defaultText);
-			dialogText.start(0.04, true);
+				FlxSpriteUtil.bound(heart, box.x, (box.x + box.shapeWidth), box.y, (box.y + box.shapeHeight));
+			}
 		}
 	}
 

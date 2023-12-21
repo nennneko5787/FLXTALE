@@ -13,6 +13,7 @@ class Global
 	public static var attack:Float = 10;
 	public static var defense:Float = 10;
 	public static var gold:Int = 0;
+	public static var speed:Int = 2;
 	public static var xp:Int = 0;
 	public static var lv:Int = 1;
 	public static var kills:Int = 0;
